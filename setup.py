@@ -1,7 +1,43 @@
 #!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 
-from setuptools import setup
+from setuptools import setup, find_packages
+
+
+def install_deps():
+    """Reads requirements.txt and preprocess it
+    to be feed into setuptools.
+
+    This is the only possible way (we found)
+    how requirements.txt can be reused in setup.py
+    using dependencies from private github repositories.
+
+    Links must be appendend by `-{StringWithAtLeastOneNumber}`
+    or something like that, so e.g. `-9231` works as well as
+    `1.1.0`. This is ignored by the setuptools, but has to be there.
+
+    Warnings:
+        to make pip respect the links, you have to use
+        `--process-dependency-links` switch. So e.g.:
+        `pip install --process-dependency-links {git-url}`
+
+    Returns:
+         list of packages and dependency links.
+    """
+    default = open('requirements.txt', 'r').readlines()
+    new_pkgs = []
+    links = []
+    for resource in default:
+        if 'git+https' in resource:
+            pkg = resource.split('#')[-1]
+            links.append(resource.strip() + '-9876543210')
+            new_pkgs.append(pkg.replace('egg=', '').rstrip())
+        else:
+            new_pkgs.append(resource.strip())
+    return new_pkgs, links
+
+pkgs, new_links = install_deps()
+
 
 setup(
     name="lwm2mclient",
@@ -10,10 +46,6 @@ setup(
     author="Alexander Ellwein",
     author_email="alex.ellwein@gmail.com",
     license="MIT License",
-    install_requires=["aiocoap @ git+https://github.com/Redferne/aiocoap.git",
-    				  "DTLSSocket>=0.1.9",
-    				  "cryptography>=2.4.2",
-    				  "cbor>=1.0.0",
-    				  "LinkHeader>=0.4.3",
-    				  "hexdump>=3.3"]
+    install_requires=pkgs,
+    dependency_links=new_links
 )
