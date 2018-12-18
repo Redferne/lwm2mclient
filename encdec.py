@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 import logging
 from enum import Enum
 from math import log
@@ -9,6 +10,7 @@ from aiocoap.numbers.codes import Code
 from hexdump import hexdump
 from model import ClientModel
 
+#logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("encoder")
 
 
@@ -20,12 +22,11 @@ class TlvType(Enum):
 
 
 class MediaType(Enum):
+    TEXT = 0
     LINK = 40
-    TEXT = 1541
-    TLV = 1542
-    JSON = 1543
-    OPAQUE = 1544
-
+    OPAQUE = 42
+    TLV = 11542
+    JSON = 11543
 
 # useful lambda to calculate the needed bytes from an integer
 needs_bytes = lambda n: 1 if n == 0 else int(log(abs(n), 256)) + 1
@@ -41,7 +42,7 @@ class TlvEncoder(object):
             _buf = bytearray()
             for inst in model.instances(obj):
                 _buf.extend(TlvEncoder._instance_to_tlv(model, obj, inst))
-            logging.debug("encode_object(): %s" % hexdump(_buf, result="return"))
+            logger.debug("encode_object(): %s" % hexdump(_buf, result="return"))
             msg = Message(code=Code.CONTENT, payload=_buf)
             msg.opt.content_format = MediaType.TLV.value
             return msg
@@ -52,7 +53,7 @@ class TlvEncoder(object):
             for res in model.resources(obj, _inst):
                 if model.is_resource_readable(obj, _inst, res):
                     _buf.extend(TlvEncoder._resource_to_tlv(model, obj, _inst, res))
-            logging.debug("encode_object(): %s" % hexdump(_buf, result="return"))
+            logger.debug("encode_object(): %s" % hexdump(_buf, result="return"))
             msg = Message(code=Code.CONTENT, payload=_buf)
             msg.opt.content_format = MediaType.TLV.value
             return msg
@@ -63,31 +64,20 @@ class TlvEncoder(object):
         for res in model.resources(obj, inst):
             if model.is_resource_readable(obj, inst, res):
                 _buf.extend(TlvEncoder._resource_to_tlv(model, obj, inst, res))
-        logging.debug("encode_instance(): %s" % hexdump(_buf, result="return"))
+        logger.debug("encode_instance(): %s" % hexdump(_buf, result="return"))
         msg = Message(code=Code.CONTENT, payload=_buf)
         msg.opt.content_format = MediaType.TLV.value
         return msg
 
     @staticmethod
     def encode_resource(model, obj, inst, res):
-        if not model.is_resource_multi_instance(obj, inst, res):
-            if model.is_resource_readable(obj, inst, res):
-                # single resource queries are returned as TEXT (plain)
-                _r = model.resource(obj, inst, res)
-                _payload = str(_r).encode()
-                logging.debug("encode_resource(): %s" % hexdump(_payload, result="return"))
-                return Message(code=Code.CONTENT, payload=_payload)
-            else:
-                return Message(code=Code.METHOD_NOT_ALLOWED)
-        else:
-            # multi-resource
-            if not model.is_resource_readable(obj, inst, res):
-                return Message(code=Code.METHOD_NOT_ALLOWED)
-            _payload = TlvEncoder._resource_to_tlv(model, obj, inst, res)
-            logging.debug("encode_resource(): %s" % hexdump(_payload, result="return"))
-            msg = Message(code=Code.CONTENT, payload=_payload)
-            msg.opt.content_format = MediaType.TLV.value
-            return msg
+        if not model.is_resource_readable(obj, inst, res):
+            return Message(code=Code.METHOD_NOT_ALLOWED)
+        _payload = TlvEncoder._resource_to_tlv(model, obj, inst, res)
+        logger.debug("encode_resource(): %s" % hexdump(_payload, result="return"))
+        msg = Message(code=Code.CONTENT, payload=_payload)
+        msg.opt.content_format = MediaType.TLV.value
+        return msg
 
     @staticmethod
     def _instance_to_tlv(model, obj, inst):
@@ -215,7 +205,7 @@ class TextDecoder(object):
             result[_obj][_inst][_res] = payload.hex()
         else:
             raise TypeError("unknown type: %s" % _type)
-        logging.debug("result of TEXT decoding: {}".format(result))
+        logger.debug("result of TEXT decoding: {}".format(result))
         return result
 
 
@@ -232,7 +222,7 @@ class TlvDecoder(object):
             _id, _value, _type, _payload = TlvDecoder._decode(path, _payload)
             _value = TlvDecoder.value_from_bytes(_model, (path[0], path[1], str(_id),), _value)
             result = dict(TlvDecoder.mergedicts(result, _value))
-        logger.info("decode result: %s" % result)
+        logger.debug("decode result: %s" % result)
         return result
 
     @staticmethod
@@ -258,7 +248,7 @@ class TlvDecoder(object):
             result[_obj][_inst][_res] = payload.hex()
         else:
             raise TypeError("unknown type: %s" % _type)
-        logging.debug("decoding result: {}".format(result))
+        logger.debug("decoding result: {}".format(result))
         return result
 
     @staticmethod

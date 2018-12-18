@@ -3,8 +3,8 @@
 import logging
 from json import load
 
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s")
-log = logging.getLogger("model")
+#logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger("model")
 
 
 class ClientModel(object):
@@ -51,9 +51,11 @@ class ClientModel(object):
             for inst in self.instances(obj):
                 yield (str(obj), str(inst))
 
-    def get_object_links(self):
+    def get_object_links(self, all=False):
         for obj in self.objects():
             for inst in self.instances(obj):
+                if not all and obj == 0:
+                    continue
                 yield "</%s/%s>" % (obj, inst)
 
     def is_path_valid(self, path):
@@ -87,22 +89,22 @@ class ClientModel(object):
         for obj in data.keys():
             for inst in data[obj].keys():
                 for res in data[obj][inst].keys():
-                    log.debug("applying %s/%s/%s = %s" % (obj, inst, res, data[obj][inst][res]))
+                    logger.debug("applying %s/%s/%s = %s" % (obj, inst, res, data[obj][inst][res]))
                     self.set_resource(obj, inst, res, data[obj][inst][res])
 
 
 if __name__ == '__main__':
     model = ClientModel()
-    log.debug("object links: %s" % ",".join(model.get_object_links()))
-    log.debug("objects: %s" % model.objects())
+    logger.debug("object links: %s" % ",".join(model.get_object_links()))
+    logger.debug("objects: %s" % model.objects())
     for obj in model.objects():
-        log.debug("object %s is multi-instance: %s" % (obj, model.is_object_multi_instance(obj)))
-        log.debug("instances for object %s: %s" % (obj, model.instances(obj)))
+        logger.debug("object %s is multi-instance: %s" % (obj, model.is_object_multi_instance(obj)))
+        logger.debug("instances for object %s: %s" % (obj, model.instances(obj)))
         for inst in model.instances(obj):
-            log.debug("resources for /%s/%s: %s" % (obj, inst, model.resources(obj, inst)))
-            log.debug("===============================================================================================")
+            logger.debug("resources for /%s/%s: %s" % (obj, inst, model.resources(obj, inst)))
+            logger.debug("===============================================================================================")
             for res in model.resources(obj, inst):
-                log.debug("resource /%s/%s/%s is multi-instance: %s" % (
+                logger.debug("resource /%s/%s/%s is multi-instance: %s" % (
                     obj, inst, res, model.is_resource_multi_instance(obj, inst, res)))
-                log.debug("resource /%s/%s/%s: \"%s\"" % (obj, inst, res, model.resource(obj, inst, res)))
-            log.debug("===============================================================================================")
+                logger.debug("resource /%s/%s/%s: \"%s\"" % (obj, inst, res, model.resource(obj, inst, res)))
+            logger.debug("===============================================================================================")

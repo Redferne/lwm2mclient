@@ -5,7 +5,7 @@ A customizable LWM2M client written in Python 3.
 
 # Installation
 
-* Prerequisite: Download and install [Python 3.4+](https://www.python.org/downloads/).
+* Prerequisite: Download and install [Python 3.5+](https://www.python.org/downloads/).
 * run ``python3 setup.py install`` (for system-wide installation) or
 * ``python3 setup.py install --user`` (for user-local installation).
 
@@ -13,8 +13,9 @@ A customizable LWM2M client written in Python 3.
 
 ## Running The Client
 
-Use ``python3 client.py`` command to connect LWM2M server listening on udp://localhost:5683 
-(for instance, a [Leshan](http://www.eclipse.org/leshan/) server).
+Use ``python3 leshan_client.py`` command to connect to Leshan public LWM2M server
+(Make sure to create a secure client with PSK here first [Leshan](https://leshan.eclipse.org/#/security)
+also edit leshan_client.py to match your configured client. Remember PSK is in ASCII, but Leshan uses hex!).
 
 ## Client Data Model
 
@@ -54,6 +55,9 @@ periodically.
 A ``cancel`` argument can be used in order to cancel an existing observation.
 See ``observe_3_0_13()`` example in ``handlers.py`` on how to trigger a periodic observation.  
 
+Please observe that Leshan uses Passive Observe Cancel, which is currently not supported by aiocoap/this client.
+See more information here: https://tools.ietf.org/html/rfc7641#section-3.6
+
 # License
 
 This project is licensed under the terms of [MIT License](LICENSE).
@@ -68,6 +72,6 @@ This project is licensed under the terms of [MIT License](LICENSE).
 * [ ] improve data definition validation
 * [ ] extend with REST API (for instrumenting it using 3rd party software)
 * [ ] provide Dockerfile
-* [ ] add DTLS support
+* [x] add DTLS support
 * [ ] tests, docs & stuff
 * [ ] fulfill SCRs from OMA (s. Tech Spec)
